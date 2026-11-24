@@ -38,6 +38,12 @@ const propertySchema = new mongoose.Schema({
     },
 
     location: {
+        address: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
         city: {
             type: String,
             required: true,
@@ -56,6 +62,12 @@ const propertySchema = new mongoose.Schema({
             trim: true,
         },
 
+        pincode: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
         coordinates: {
             type: {
                 type: String,
@@ -64,8 +76,21 @@ const propertySchema = new mongoose.Schema({
             },
 
             coordinates: {
-                type: [Number], // [longitude, latitude]
+                type: [Number],                                                    // [longitude, latitude]
                 required: true,
+                validate: {
+                    validator: function (coordinates) {
+                        return (
+                            Array.isArray(coordinates) &&
+                            coordinates.length === 2 &&
+                            coordinates[0] >= -180 &&
+                            coordinates[0] <= 180 &&
+                            coordinates[1] >= -90 &&
+                            coordinates[1] <= 90
+                        );
+                    },
+                    message: "Invalid longitude or latitude.",
+                },
             },
         },
     },
@@ -103,7 +128,7 @@ const propertySchema = new mongoose.Schema({
 
     images: [
         {
-            type: String, // image URL
+            type: String,                                                    // image URL
             required: true,
         },
     ],
@@ -118,6 +143,8 @@ const propertySchema = new mongoose.Schema({
         timestamps: true,
     }
 )
+
+propertySchema.index({ "location.coordinates": "2dsphere" });
 
 const propertyModel = mongoose.model("listing", propertySchema);
 

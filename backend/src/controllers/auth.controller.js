@@ -60,7 +60,8 @@ const registerUser = async (req, res) => {
         email,
         user: user._id,
         otpHash,
-        purpose: 'email-verification'
+        purpose: 'email-verification',
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
     })
 
     await sendEmail(email, "OTP Verification", `Your OTP is: ${otp}`, generateOtpHtml(otp))

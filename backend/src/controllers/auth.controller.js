@@ -1,23 +1,28 @@
 const userModel = require('../models/user.model')
 const sessionModel = require('../models/session.model')
+const otpModel = require('../models/otp.model')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const config = require('../config/config')
 const { sendEmail } = require('../services/email.service')
 const { generateOtp, generateOtpHtml } = require('../utils/generateToken')
-const otpModel = require('../models/otp.model')
-const { log } = require('console')
 
 // register user
 const registerUser = async (req, res) => {
-    const { name, email, password, phone, profileImage } = req.body;
-    const role = "guest";
+    const { name, email, password, phone, profileImage, role } = req.body;
+    const allowedRoles = ["guest", "host"];
     const status = "active";
 
     if (!name || !email || !password || !phone || !profileImage) {
         return res.status(400).json({
             message: 'All fields are required'
+        });
+    }
+
+    if (typeof role !== "string" || !allowedRoles.includes(role)) {
+        return res.status(400).json({
+            message: "Role must be either guest or host"
         });
     }
 

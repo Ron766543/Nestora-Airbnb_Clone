@@ -18,10 +18,10 @@ authRouter.post("/refresh-token", authController.refreshToken);  //5
 
 authRouter.post("/logout", authController.logoutUser);     //6
 
-authRouter.post("/forget-password", authController.forgetPassword);
+authRouter.post("/forget-password", authController.forgetPassword);  //7
 
-authRouter.post("/verify-otp", authController.verifyResetOtp);
+authRouter.post("/verify-otp", authController.verifyResetOtp);   //8
 
-authRouter.post("/reset-password", authController.resetPassword);
+authRouter.post("/reset-password", authController.resetPassword);  //9
 
 module.exports = authRouter;

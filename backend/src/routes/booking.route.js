@@ -11,7 +11,7 @@ const bookingRouter = express.Router();
 
 bookingRouter.use(authMiddleware);
 
-bookingRouter.post( "/", checkRole("guest"), createBooking );
+bookingRouter.post( "/create", checkRole("guest"), createBooking );
 
 bookingRouter.get( "/my", checkRole("guest"), getMyBookings );
 

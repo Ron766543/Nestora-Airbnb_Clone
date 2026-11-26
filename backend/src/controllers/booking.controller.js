@@ -23,7 +23,6 @@ const parseDate = (value) => {
     return date;
 };
 
-
 const createBooking = async (req, res) => {
     try {
         const { propertyId, checkIn, checkOut, guests } = req.body;
@@ -145,7 +144,6 @@ const createBooking = async (req, res) => {
     }
 };
 
-
 const getMyBookings = async (req, res) => {
     try {
         const bookings = await bookingModel.find({
@@ -169,7 +167,6 @@ const getMyBookings = async (req, res) => {
     }
 };
 
-
 const getHostBookings = async (req, res) => {
     try {
         const bookings = await bookingModel.find({
@@ -192,7 +189,6 @@ const getHostBookings = async (req, res) => {
         });
     }
 };
-
 
 const getBookingById = async (req, res) => {
     try {
@@ -284,7 +280,6 @@ const cancelBooking = async (req, res) => {
     }
 };
 
-
 const confirmBooking = async (req, res) => {
     try {
         const { id } = req.params;
@@ -330,5 +325,52 @@ const confirmBooking = async (req, res) => {
     }
 };
 
+const completeBooking = async (req, res) => {
 
-module.exports = { createBooking, getMyBookings, getHostBookings, getBookingById, cancelBooking, confirmBooking };
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+            message: "Invalid booking ID."
+        });
+    }
+
+    const booking = await bookingModel.findOne({
+        _id: id,
+        host: req.user._id
+    });
+
+    if (!booking) {
+        return res.status(404).json({
+            message: "Booking not found."
+        });
+    }
+
+    if (booking.status !== "CONFIRMED") {
+        return res.status(400).json({
+            message: "Only confirmed bookings can be completed."
+        });
+    }
+
+    if (booking.checkOut > new Date()) {
+        return res.status(400).json({
+            message: "You can complete this booking only after checkout date."
+        });
+    }
+
+    booking.status = "COMPLETED";
+
+    await booking.save();
+
+    return res.status(200).json({
+        message: "Booking completed successfully.",
+        booking
+    });
+
+};
+
+
+
+
+
+module.exports = { createBooking, getMyBookings, getHostBookings, getBookingById, cancelBooking, confirmBooking, completeBooking };

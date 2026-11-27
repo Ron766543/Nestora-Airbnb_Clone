@@ -128,8 +128,15 @@ const propertySchema = new mongoose.Schema({
 
     images: [
         {
-            type: String,                                                    // image URL
-            required: true,
+            url: {
+                type: String,
+                required: true,
+            },
+
+            publicId: {
+                type: String,
+                required: true,
+            },
         },
     ],
 

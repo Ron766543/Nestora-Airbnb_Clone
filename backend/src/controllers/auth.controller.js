@@ -7,81 +7,114 @@ const crypto = require('crypto')
 const config = require('../config/config')
 const { sendEmail } = require('../services/email.service')
 const { generateOtp, generateOtpHtml } = require('../utils/generateToken')
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary.utils');
+
 
 // register user
 const registerUser = async (req, res) => {
-    const { name, email, password, phone, profileImage, role } = req.body;
-    const allowedRoles = ["guest", "host"];
-    const status = "active";
+    let uploadedImage;
+    let user;
 
-    if (!name || !email || !password || !phone || !profileImage) {
-        return res.status(400).json({
-            message: 'All fields are required'
-        });
-    }
+    try {
+        const { name, email, password, phone, role } = req.body;
+        const allowedRoles = ["guest", "host"];
+        const status = "active";
 
-    if (typeof role !== "string" || !allowedRoles.includes(role)) {
-        return res.status(400).json({
-            message: "Role must be either guest or host"
-        });
-    }
+        if (!name || !email || !password || !phone) {
+            return res.status(400).json({
+                message: 'All fields are required'
+            });
+        }
 
-    if (password.length < 8) {
-        return res.status(400).json({
-            message: 'Password must be at least 8 characters'
-        });
-    }
+        if (!req.file) {
+            return res.status(400).json({
+                message: "Profile image is required"
+            })
+        }
 
-    const isUserAlreadyExist = await userModel.findOne({ email });
+        if (!role || !allowedRoles.includes(role)) {
+            return res.status(400).json({
+                message: "Role must be either guest or host"
+            });
+        }
 
-    if (isUserAlreadyExist) {
-        return res.status(409).json({
-            message: "Account already exists with this email. Please login instead.",
+        if (password.length < 8) {
+            return res.status(400).json({
+                message: 'Password must be at least 8 characters'
+            });
+        }
+
+        const isUserAlreadyExist = await userModel.findOne({ email });
+
+        if (isUserAlreadyExist) {
+            return res.status(409).json({
+                message: "Account already exists with this email. Please login instead.",
+            })
+
+        }
+
+        uploadedImage = await uploadToCloudinary(req.file.buffer);
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        user = await userModel.create({
+            name,
+            email,
+            password: hashedPassword,
+            role,
+            phone,
+            profileImage: uploadedImage.url,
+            status
         })
 
+        const otp = generateOtp();
+        const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+
+        await otpModel.create({
+            email,
+            user: user._id,
+            otpHash,
+            purpose: 'email-verification',
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000)
+        })
+
+        await sendEmail(email, "OTP Verification", `Your OTP is: ${otp}`, generateOtpHtml(otp))
+
+
+
+
+        res.status(201).json({
+            message: "User registered successfully",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                profileImage: user.profileImage,
+                verified: user.verified,
+                createdAt: user.createdAt.toLocaleString('en-IN'),
+                updatedAt: user.updatedAt.toLocaleString('en-IN'),
+            },
+
+        })
+
+    } catch (error) {
+        console.error("Register error:", error);
+
+        if (user) {
+            await otpModel.deleteMany({ user: user._id });
+            await userModel.findByIdAndDelete(user._id);
+        }
+
+        if (uploadedImage?.publicId) {
+            await deleteFromCloudinary(uploadedImage.publicId);
+        }
+
+        return res.status(500).json({
+            message: "Something went wrong during registration"
+        });
+
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await userModel.create({
-        name,
-        email,
-        password: hashedPassword,
-        role,
-        phone,
-        profileImage,
-        status
-    })
-
-    const otp = generateOtp();
-    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
-
-    await otpModel.create({
-        email,
-        user: user._id,
-        otpHash,
-        purpose: 'email-verification',
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000)
-    })
-
-    await sendEmail(email, "OTP Verification", `Your OTP is: ${otp}`, generateOtpHtml(otp))
-
-
-
-
-    res.status(201).json({
-        message: "User registered successfully",
-        user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            verified: user.verified,
-            createdAt: user.createdAt.toLocaleString('en-IN'),
-            updatedAt: user.updatedAt.toLocaleString('en-IN'),
-        },
-
-    })
 }
 
 // login user

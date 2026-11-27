@@ -1,12 +1,12 @@
 const express = require('express')
 const authController = require('../controllers/auth.controller')
-
+const upload = require('../middlewares/cloudinary.middleware');
 
 
 const authRouter = express.Router();
 
 
-authRouter.post("/register", authController.registerUser);  //1
+authRouter.post("/register", upload.single("profileImage"), authController.registerUser);  //1
 
 authRouter.post("/verify-email", authController.verifyEmail);  //2
 
@@ -25,3 +25,5 @@ authRouter.post("/verify-otp", authController.verifyResetOtp);   //8
 authRouter.post("/reset-password", authController.resetPassword);  //9
 
 module.exports = authRouter;
+
+// all tested

@@ -327,45 +327,54 @@ const confirmBooking = async (req, res) => {
 
 const completeBooking = async (req, res) => {
 
-    const { id } = req.params;
+    try {
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({
-            message: "Invalid booking ID."
+
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                message: "Invalid booking ID."
+            });
+        }
+
+        const booking = await bookingModel.findOne({
+            _id: id,
+            host: req.user._id
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                message: "Booking not found."
+            });
+        }
+
+        if (booking.status !== "CONFIRMED") {
+            return res.status(400).json({
+                message: "Only confirmed bookings can be completed."
+            });
+        }
+
+        if (booking.checkOut > new Date()) {
+            return res.status(400).json({
+                message: "You can complete this booking only after checkout date."
+            });
+        }
+
+        booking.status = "COMPLETED";
+
+        await booking.save();
+
+        return res.status(200).json({
+            message: "Booking completed successfully.",
+            booking
+        });
+    } catch (error) {
+        console.error("complete booking error:", error);
+        return res.status(500).json({
+            message: "Internal Error."
         });
     }
-
-    const booking = await bookingModel.findOne({
-        _id: id,
-        host: req.user._id
-    });
-
-    if (!booking) {
-        return res.status(404).json({
-            message: "Booking not found."
-        });
-    }
-
-    if (booking.status !== "CONFIRMED") {
-        return res.status(400).json({
-            message: "Only confirmed bookings can be completed."
-        });
-    }
-
-    if (booking.checkOut > new Date()) {
-        return res.status(400).json({
-            message: "You can complete this booking only after checkout date."
-        });
-    }
-
-    booking.status = "COMPLETED";
-
-    await booking.save();
-
-    return res.status(200).json({
-        message: "Booking completed successfully.",
-        booking
-    });
 
 };
 

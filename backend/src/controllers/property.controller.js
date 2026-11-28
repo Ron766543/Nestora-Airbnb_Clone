@@ -50,10 +50,7 @@ const getPublicProperty = (property) => {
             country: data.location.country,
             coordinates: {
                 type: "Point",
-                coordinates: [
-                    Number(coordinates[0].toFixed(2)),
-                    Number(coordinates[1].toFixed(2))
-                ]
+                coordinates: coordinates
             }
         }
     };

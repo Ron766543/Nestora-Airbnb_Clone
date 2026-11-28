@@ -6,17 +6,18 @@ const adminRouter = require('./routes/admin.route')
 const propertyRouter = require("./routes/property.route");
 const bookingRouter = require("./routes/booking.route");
 const reviewRouter = require("./routes/review.route");
+const cors = require('cors')
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-
+app.use(cors());
 
 
 app.use('/api/auth', authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
-app.use("/api/propertie", propertyRouter);
+app.use("/api/properties", propertyRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/reviews", reviewRouter);
 
